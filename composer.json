@@ -1,0 +1,26 @@
+{
+    "name": "sequra/php-client",
+    "description": "PHP client for SeQura API",
+    "version": "1.0.0",
+    "license": [
+        "proprietary"
+    ],
+    "type": "library",
+    "authors": [
+        {
+            "name": "SeQura Engineering",
+            "email": "dev@sequra.es"
+        }
+    ],
+    "minimum-stability": "alpha",
+    "require": {
+        "php": ">=5.4.0",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sequra\\PhpClient\\": "src/"
+        }
+    }
+}
