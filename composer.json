@@ -1,10 +1,12 @@
 {
     "name": "sequra/php-client",
     "description": "PHP client for SeQura API",
-    "version": "1.0.0",
-    "license": [
-        "proprietary"
+    "keywords": [
+        "payment",
+        "sequra",
+        "pagos"
     ],
+    "license": "MIT",
     "type": "library",
     "authors": [
         {
@@ -12,7 +14,7 @@
             "email": "dev@sequra.es"
         }
     ],
-    "minimum-stability": "alpha",
+    "minimum-stability": "stable",
     "require": {
         "php": ">=5.4.0",
         "ext-curl": "*",
