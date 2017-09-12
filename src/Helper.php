@@ -6,43 +6,40 @@
 
 namespace Sequra\PhpClient;
 
-class Helper
-{
-    public static function isConsistentCart($cart)
-    {
-        $totals = self::totals($cart);
+class Helper {
+	const ISO8601_PATTERN = '^((\d{4})-([0-1]\d)-([0-3]\d))+$|P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$';
 
-        return $cart['order_total_without_tax'] == $totals['without_tax'] && $cart['order_total_with_tax'] == $totals['with_tax'];
-    }
+	public static function isConsistentCart( $cart ) {
+		$totals = self::totals( $cart );
 
-    public static function totals($cart)
-    {
-        $total_without_tax = $total_with_tax = 0;
-        foreach ($cart['items'] as $item) {
-            $total_without_tax += isset($item['total_without_tax']) ? $item['total_without_tax'] : 0;
-            $total_with_tax += isset($item['total_with_tax']) ? $item['total_with_tax'] : 0;
-        }
+		return $cart['order_total_without_tax'] == $totals['without_tax'] && $cart['order_total_with_tax'] == $totals['with_tax'];
+	}
 
-        return array('without_tax' => $total_without_tax, 'with_tax' => $total_with_tax);
-    }
+	public static function totals( $cart ) {
+		$total_without_tax = $total_with_tax = 0;
+		foreach ( $cart['items'] as $item ) {
+			$total_without_tax += isset( $item['total_without_tax'] ) ? $item['total_without_tax'] : 0;
+			$total_with_tax    += isset( $item['total_with_tax'] ) ? $item['total_with_tax'] : 0;
+		}
 
-    public static function removeNulls($data)
-    {
-        foreach ($data as $key => $value) {
-            if (is_null($value)) {
-                unset($data[$key]);
-            } else {
-                if (is_array($value)) {
-                    $data[$key] = self::removeNulls($value);
-                }
-            }
-        }
+		return array( 'without_tax' => $total_without_tax, 'with_tax' => $total_with_tax );
+	}
 
-        return $data;
-    }
+	public static function removeNulls( $data ) {
+		foreach ( $data as $key => $value ) {
+			if ( is_null( $value ) ) {
+				unset( $data[ $key ] );
+			} else {
+				if ( is_array( $value ) ) {
+					$data[ $key ] = self::removeNulls( $value );
+				}
+			}
+		}
 
-    public static function notNull($value1, $value2)
-    {
-        return is_null($value1) ? $value2 : $value1;
-    }
+		return $data;
+	}
+
+	public static function notNull( $value1, $value2 ) {
+		return is_null( $value1 ) ? $value2 : $value1;
+	}
 }
