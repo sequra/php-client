@@ -8,6 +8,8 @@ namespace Sequra\PhpClient;
 
 class Helper {
 	const ISO8601_PATTERN = '^((\d{4})-([0-1]\d)-([0-3]\d))+$|P(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(\d+H)?(\d+M)?(\d+S)?)?$';
+	static $centsPerWhole = 100;
+
 
 	public static function isConsistentCart( $cart ) {
 		$totals = self::totals( $cart );
@@ -41,5 +43,9 @@ class Helper {
 
 	public static function notNull( $value1, $value2 ) {
 		return is_null( $value1 ) ? $value2 : $value1;
+	}
+
+	public static function integerPrice( $price ) {
+		return intval( round( self::$centsPerWhole * $price ) );
 	}
 }

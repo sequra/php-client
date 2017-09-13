@@ -134,16 +134,7 @@ abstract class BuilderAbstract
 
 	public abstract function deliveryMethod();
 
-	public function items()
-	{
-		return array_merge(
-			$this->productItem(),
-			$this->extraItems(),
-			$this->handlingItems()
-		);
-	}
-
-	public abstract function handlingItems();
+	public abstract function items();
 
 	public abstract function customer();
 
