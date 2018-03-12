@@ -139,6 +139,26 @@ class Client
         curl_close($this->ch);
     }
 
+    public function sendIdentificationForm($uri, $options = array())
+    {
+        $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
+        $options["product_code"] = $options["product"];
+        $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
+        $this->initCurl($uri . '/form_deliveries');
+        $this->verbThePayload('POST',$options);
+        $this->sendRequest();
+
+        if ($this->status >= 200 && $this->status <= 299) {
+            curl_close($this->ch);
+            $this->success = true;
+
+            return $this->curl_result;
+        } else {
+            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
+        }
+        curl_close($this->ch);
+    }
+
     public function getCreditAgreements($amount, $merchant)
     {
         $uri = $this->_endpoint . '/merchants/' . $merchant . '/credit_agreements?total_with_tax=' . $amount . '&currency=EUR&locale=es-ES&country=ES';
