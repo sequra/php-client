@@ -146,7 +146,6 @@ class Client
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
         $this->verbThePayload('POST',$options);
-        $this->sendRequest();
 
         if ($this->status >= 200 && $this->status <= 299) {
             curl_close($this->ch);
