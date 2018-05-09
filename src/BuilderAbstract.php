@@ -294,6 +294,7 @@ abstract class BuilderAbstract
                 unset($this->_orders[$key]);
             }
         }
+        $this->_orders = array_values($this->_orders);
     }
 
     public abstract function getOrderStats();
