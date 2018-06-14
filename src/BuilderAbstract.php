@@ -221,7 +221,7 @@ abstract class BuilderAbstract
         $items   = array();
         $amended = false;
         foreach ($order['cart']['items'] as $item) {
-            if ('discount' == $item['type']) {
+            if (isset($item['type']) && 'discount' == $item['type']) {
                 $item['total_without_tax'] += $diff_without_tax;
                 $item['total_with_tax']    += $diff_with_tax;
                 $item['name']              .= ('' == $item['name'] ? '' : ' + ') . 'ajuste por redondeos';
