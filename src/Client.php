@@ -208,6 +208,23 @@ class Client
         curl_close($this->ch);
     }
 
+    public function orderUpdate($order)
+    {
+        $uri = $this->_endpoint .
+               '/merchants/' . $order['merchant']['id'] .
+               '/orders/' . $order['merchant_reference']['order_ref_1'];
+        $this->initCurl($uri);
+        $this->verbThePayload('PUT', array('order' => $order));
+
+        if ($this->status >= 200 && $this->status <= 299) {
+            $this->success = true;
+        } elseif ($this->status == 409) {
+            $this->cart_has_changed = true;
+            $this->json             = json_decode($this->curl_result, true);
+        }
+        curl_close($this->ch);
+    }
+    
     public function callCron($cron_url)
     {
         $this->_user_agent = 'sequra-cron';
