@@ -231,8 +231,9 @@ abstract class BuilderAbstract
         }
         if ( ! $amended) {
             unset($item);
-            if($diff_with_tax<0){
-                $item['type']              = 'discount';
+            $item['type']              = 'discount';
+            if ($diff_with_tax > 0) {
+                $item['type'] = 'handling';
             }
             $item['reference']         = '';
             $item['name']              = 'ajuste por redondeos';
