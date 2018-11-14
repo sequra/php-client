@@ -308,12 +308,23 @@ abstract class BuilderAbstract
     {
         return array_merge(
             $this->productItem(),
-            $this->extraItems(),
-            $this->handlingItems()
+            $this->handlingItems(),
+            $this->discountItems(),
+            $this->extraItems()
         );
     }
+    
+    public abstract function productItem();
 
-    // TODO: find out were this method was copied from so that we can see when it is updated.
+    public function handlingItems(){
+        return array();
+    }
+    
+    public function discountItems(){
+        return array();
+    }
 
-    public abstract function handlingItems();
+    public function extraItems(){
+        return array();
+    }
 }
