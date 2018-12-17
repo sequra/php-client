@@ -314,8 +314,10 @@ abstract class BuilderAbstract
         );
     }
     
-    public abstract function productItem();
-
+    public function  productItem(){
+        return array();
+    }
+    
     public function handlingItems(){
         return array();
     }
