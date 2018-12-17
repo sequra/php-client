@@ -307,17 +307,17 @@ abstract class BuilderAbstract
     public function items()
     {
         return array_merge(
-            $this->productItem(),
+            $this->productItems(),
             $this->handlingItems(),
             $this->discountItems(),
             $this->extraItems()
         );
     }
     
-    public function  productItem(){
+    public function  productItems(){
         return array();
     }
-    
+
     public function handlingItems(){
         return array();
     }
