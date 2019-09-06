@@ -145,7 +145,7 @@ class Client
         $options["product_code"] = $options["product"];
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
-        $this->verbThePayload('POST',$options);
+        $this->verbThePayload('POST', $options);
 
         if ($this->status >= 200 && $this->status <= 299) {
             curl_close($this->ch);
@@ -156,6 +156,53 @@ class Client
             $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
         }
         curl_close($this->ch);
+    }
+
+    public function startCards($order)
+    {
+        if (!$this->qualifyForstartCards($order) && !$this->_debug) {
+            return;
+        }
+
+        $this->initCurl($this->_endpoint . '/cards');
+        $this->verbThePayload('POST', array('order' => $order));
+        if ($this->status == 204) {
+            $this->success = true;
+            $this->log("Start " . $this->status . ": Ok!");
+        } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
+            $this->json = json_decode($this->curl_result, true); // return array, not object
+            $this->log("Start " . $this->status . ": " . $this->curl_result);
+        }
+        curl_close($this->ch);
+    }
+
+    public function getCardsForm($uri, $options = array())
+    {
+        $this->initCurl($uri . '?' . http_build_query($options));
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+        $this->sendRequest();
+
+        if ($this->status >= 200 && $this->status <= 299) {
+            $this->success = true;
+            $this->json = json_decode($this->curl_result, true); // return array, not object
+        } elseif ($this->status >= 400 && $this->status <= 499) {
+            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
+        } else {
+            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
+        }
+        curl_close($this->ch);
+    }
+
+    public function qualifyForstartCards($order)
+    {
+        return
+            isset($order['customer']['ref']) && $order['customer']['ref']!='' &&
+            isset($order['customer']['email']) && $order['customer']['email']!='' &&
+            (
+                (isset($order['delivery_address']['mobile_phone']) && $order['delivery_address']['mobile_phone']!='') ||
+                (isset($order['delivery_address']['phone']) && $order['delivery_address']['phone']!='')
+            );
     }
 
     public function getCreditAgreements($amount, $merchant)
