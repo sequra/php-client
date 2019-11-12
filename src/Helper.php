@@ -46,6 +46,20 @@ class Helper
         return $data;
     }
 
+    public static function removeHtmlEntities($data)
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $data[$key] = html_entity_decode($value, ENT_COMPAT | ENT_HTML401, 'UTF-8');
+            } else {
+                if (is_array($value)) {
+                    $data[$key] = self::removeHtmlEntities($value);
+                }
+            }
+        }
+        return $data;
+    }
+
     public static function notNull($value1, $value2)
     {
         return is_null($value1) ? $value2 : $value1;

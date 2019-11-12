@@ -51,7 +51,7 @@ abstract class BuilderAbstract
             $order['merchant_reference'] = $reference;
         }
 
-        return $order;
+        return Helper::removeHtmlEntities($order);
     }
 
     public function merchant()
