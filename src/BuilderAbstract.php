@@ -25,7 +25,7 @@ abstract class BuilderAbstract
 
     public static function integerPrice($price)
     {
-        return intval(round(self::$centsPerWhole * $price));
+        return intval(round(self::$centsPerWhole * (float) $price));
     }
 
     protected static function dateOrBlank($date)
@@ -313,7 +313,7 @@ abstract class BuilderAbstract
             $this->extraItems()
         );
     }
-    
+
     public function  productItems(){
         return array();
     }
@@ -321,7 +321,7 @@ abstract class BuilderAbstract
     public function handlingItems(){
         return array();
     }
-    
+
     public function discountItems(){
         return array();
     }

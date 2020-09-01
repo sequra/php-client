@@ -50,6 +50,7 @@ class Client
             $this->success = true;
             $this->log("Start " . $this->status . ": Ok!");
         } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
+            $this->success = false;
             $this->json = json_decode($this->curl_result, true); // return array, not object
             $this->log("Start " . $this->status . ": " . $this->curl_result);
         }
@@ -124,16 +125,16 @@ class Client
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
         $options["ajax"]    = (isset($options["ajax"]) && $options["ajax"]) ? "true" : "false";
         $this->initCurl($uri . '/form_v2' . '?' . http_build_query($options));
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
         $this->sendRequest();
 
         if ($this->status >= 200 && $this->status <= 299) {
             curl_close($this->ch);
             $this->success = true;
-
             return $this->curl_result;
         } else {
+            $this->success = false;
             $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
         }
         curl_close($this->ch);
@@ -150,9 +151,9 @@ class Client
         if ($this->status >= 200 && $this->status <= 299) {
             curl_close($this->ch);
             $this->success = true;
-
             return $this->curl_result;
         } else {
+            $this->success = false;
             $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
         }
         curl_close($this->ch);
@@ -170,6 +171,7 @@ class Client
             $this->success = true;
             $this->log("Start " . $this->status . ": Ok!");
         } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
+            $this->success = false;
             $this->json = json_decode($this->curl_result, true); // return array, not object
             $this->log("Start " . $this->status . ": " . $this->curl_result);
         }
@@ -179,10 +181,10 @@ class Client
     public function getCardsForm($uri, $options = array())
     {
         $this->initCurl($uri . '?' . http_build_query($options));
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
         $this->sendRequest();
-
+        $this->success = false;
         if ($this->status >= 200 && $this->status <= 299) {
             $this->success = true;
             $this->json = json_decode($this->curl_result, true); // return array, not object
@@ -205,19 +207,41 @@ class Client
             );
     }
 
+    public function getMerchantPaymentMethods($merchant)
+    {
+        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant);
+    }
+
+    public function getPaymentMethods($uri, $options = array())
+    {
+        $this->initCurl($uri . '/payment_methods' . (count($options)>0? '?' . http_build_query($options):''));
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+        $this->sendRequest();
+        $this->success = false;
+        if ($this->status >= 200 && $this->status <= 299) {
+            $this->success = true;
+            $this->json = json_decode($this->curl_result, true); // return array, not object
+        } elseif ($this->status >= 400 && $this->status <= 499) {
+            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
+        } else {
+            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
+        }
+        curl_close($this->ch);
+    }
+
     public function getCreditAgreements($amount, $merchant)
     {
         $uri = $this->_endpoint . '/merchants/' . $merchant . '/credit_agreements?total_with_tax=' . $amount . '&currency=EUR&locale=es-ES&country=ES';
         $this->initCurl($uri);
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
-
         if ($this->status >= 200 && $this->status <= 299) {
             $this->success = true;
             curl_close($this->ch);
-
             return json_decode($this->curl_result, true);
         } else {
+            $this->success = false;
             $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
         }
         curl_close($this->ch);
@@ -234,6 +258,7 @@ class Client
         if ($this->status >= 200 && $this->status <= 299) {
             $this->success = true;
         } elseif ($this->status == 409) {
+            $this->success = false;
             $this->cart_has_changed = true;
             $this->json             = json_decode($this->curl_result, true);
         }
@@ -249,6 +274,7 @@ class Client
             $this->success = true;
             $this->log("Delivery " . $this->status . ": Ok!");
         } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
+            $this->success = false;
             $this->json = json_decode($this->curl_result, true); // return array, not object
             $this->log("Delivery " . $this->status . ": " . print_r($this->json, true));
         }
@@ -266,12 +292,13 @@ class Client
         if ($this->status >= 200 && $this->status <= 299) {
             $this->success = true;
         } elseif ($this->status == 409) {
+            $this->success = false;
             $this->cart_has_changed = true;
             $this->json             = json_decode($this->curl_result, true);
         }
         curl_close($this->ch);
     }
-    
+
     public function callCron($cron_url)
     {
         $this->_user_agent = 'sequra-cron';
@@ -301,6 +328,11 @@ class Client
     public function cartHasChanged()
     {
         return $this->cart_has_changed;
+    }
+
+    public function getRawResult()
+    {
+        return $this->curl_result;
     }
 
     public function getOrderUri()
