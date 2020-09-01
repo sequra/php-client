@@ -47,7 +47,7 @@ abstract class BuilderAbstract
         );
         $order     = $this->fixTotals($order);
         $reference = $this->orderMerchantReference();
-        if ('confirmed' == $state && count($reference) > 0) {
+        if ($state && count($reference) > 0) {
             $order['merchant_reference'] = $reference;
         }
 
