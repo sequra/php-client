@@ -23,9 +23,11 @@ abstract class BuilderAbstract
 
     public static abstract function getPreviousOrders($customerID);
 
-    public static function integerPrice($price)
+    public static function integerPrice(int $price)
     {
-        return intval(round(self::$centsPerWhole * (float) $price));
+        return is_numeric($price)?
+            intval(round(self::$centsPerWhole * (float) $price)):
+            0;
     }
 
     protected static function dateOrBlank($date)

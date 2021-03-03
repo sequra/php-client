@@ -38,6 +38,14 @@ class Client
         $this->_user_agent = Helper::notNull(self::$user_agent, 'cURL php ' . phpversion());
     }
 
+    public function isValidAuth()
+    {
+        $this->initCurl($this->_endpoint . '/orders');
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        $this->sendRequest();
+        return $this->status != 401; 
+    }
+
     public function startSolicitation($order)
     {
         if ( ! $this->qualifyForSolicitation($order) && ! $this->_debug) {
