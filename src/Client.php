@@ -255,13 +255,13 @@ class Client
         curl_close($this->ch);
     }
 
-    public function updateOrder($uri, $order)
+    public function updateOrder($uri, $order, $verb = 'PUT')
     {
         if ( ! preg_match('!^https?://!', $uri)) {
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri);
-        $this->verbThePayload('PUT', array('order' => $order));
+        $this->verbThePayload($verb, array('order' => $order));
 
         if ($this->status >= 200 && $this->status <= 299) {
             $this->success = true;
