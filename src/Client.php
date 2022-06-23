@@ -98,9 +98,6 @@ class Client
         $data_string = json_encode(Helper::removeNulls($payload));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
-        if ($this->_debug) {
-            curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
-        }
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array(
                 'Accept: application/json',
                 'Content-Type: application/json',
@@ -112,6 +109,9 @@ class Client
 
     private function sendRequest()
     {
+        if ($this->_debug) {
+            curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
+        }
         $this->curl_result = curl_exec($this->ch);
         $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
     }
