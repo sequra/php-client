@@ -71,73 +71,6 @@ class Client
         return true;
     }
 
-    private function initCurl($url)
-    {
-        $this->success = $this->json = null;
-        $this->ch      = curl_init($url);
-        curl_setopt($this->ch, CURLOPT_USERPWD, $this->_user . ':' . $this->_password);
-        curl_setopt($this->ch, CURLOPT_USERAGENT, $this->_user_agent);
-        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($this->ch, CURLOPT_FAILONERROR, false);
-        // Some versions of openssl seem to need this
-        // http://www.supermind.org/blog/763/solved-curl-56-received-problem-2-in-the-chunky-parser
-        curl_setopt($this->ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-        // From http://it.toolbox.com/wiki/index.php/Use_curl_from_PHP_-_processing_response_headers
-        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeHeaders'));
-        $this->headers = '';
-    }
-
-    private function verbThePayload($verb, $payload)
-    {
-        $data_string = json_encode(Helper::removeNulls($payload));
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
-        curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt(
-            $this->ch,
-            CURLOPT_HTTPHEADER,
-            array(
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($data_string)
-            )
-        );
-        $this->sendRequest();
-    }
-
-    private function sendRequest()
-    {
-        $this->succeess = false;
-        if ($this->_debug) {
-            curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
-        }
-        $this->curl_result = curl_exec($this->ch);
-        $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-    }
-
-    private function dealWithResponse()
-    {
-        if (200 <= $this->status && $this->status <= 299) {
-            $this->success = true;
-            $this->log("Start " . $this->status . ": Ok!");
-        } else {
-            $this->success = false;
-            $this->json = json_decode($this->curl_result, true);
-            $this->log("Start " . $this->status . ": " . $this->curl_result);
-        }
-    }
-
-    private function log($msg)
-    {
-        if (!$this->_debug) {
-            return;
-        }
-        if (!$this->_logfile) {
-            error_log($msg);
-        } else {
-            error_log($msg . "\n", 3, $this->_logfile);
-        }
-    }
-
     public function getIdentificationForm($uri, $options = array())
     {
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
@@ -271,8 +204,6 @@ class Client
         return $this->json;
     }
 
-    // Private methods below
-
     public function getStatus()
     {
         return $this->status;
@@ -305,6 +236,75 @@ class Client
         var_dump($this->json);
         echo "\nsuccess: \n";
         var_dump($this->success);
+    }
+
+    // Private methods below
+
+    private function initCurl($url)
+    {
+        $this->success = $this->json = null;
+        $this->ch      = curl_init($url);
+        curl_setopt($this->ch, CURLOPT_USERPWD, $this->_user . ':' . $this->_password);
+        curl_setopt($this->ch, CURLOPT_USERAGENT, $this->_user_agent);
+        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->ch, CURLOPT_FAILONERROR, false);
+        // Some versions of openssl seem to need this
+        // http://www.supermind.org/blog/763/solved-curl-56-received-problem-2-in-the-chunky-parser
+        curl_setopt($this->ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+        // From http://it.toolbox.com/wiki/index.php/Use_curl_from_PHP_-_processing_response_headers
+        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeHeaders'));
+        $this->headers = '';
+    }
+
+    private function verbThePayload($verb, $payload)
+    {
+        $data_string = json_encode(Helper::removeNulls($payload));
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
+        curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt(
+            $this->ch,
+            CURLOPT_HTTPHEADER,
+            array(
+                'Accept: application/json',
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($data_string)
+            )
+        );
+        $this->sendRequest();
+    }
+
+    private function sendRequest()
+    {
+        $this->succeess = false;
+        if ($this->_debug) {
+            curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
+        }
+        $this->curl_result = curl_exec($this->ch);
+        $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+    }
+
+    private function dealWithResponse()
+    {
+        if (200 <= $this->status && $this->status <= 299) {
+            $this->success = true;
+            $this->log("Start " . $this->status . ": Ok!");
+        } else {
+            $this->success = false;
+            $this->json = json_decode($this->curl_result, true);
+            $this->log("Start " . $this->status . ": " . $this->curl_result);
+        }
+    }
+
+    private function log($msg)
+    {
+        if (!$this->_debug) {
+            return;
+        }
+        if (!$this->_logfile) {
+            error_log($msg);
+        } else {
+            error_log($msg . "\n", 3, $this->_logfile);
+        }
     }
 
     private function storeHeaders($ch, $header)
