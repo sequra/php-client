@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright © 2017 SeQura Engineering. All rights reserved.
  */
@@ -43,25 +44,18 @@ class Client
         $this->initCurl($this->_endpoint . '/orders');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
-        return $this->status != 401; 
+        return $this->status != 401;
     }
 
     public function startSolicitation($order)
     {
-        if ( ! $this->qualifyForSolicitation($order) && ! $this->_debug) {
+        if (!$this->qualifyForSolicitation($order) && !$this->_debug) {
             return;
         }
 
         $this->initCurl($this->_endpoint . '/orders');
         $this->verbThePayload('POST', array('order' => $order));
-        if ($this->status == 204) {
-            $this->success = true;
-            $this->log("Start " . $this->status . ": Ok!");
-        } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
-            $this->success = false;
-            $this->json = json_decode($this->curl_result, true); // return array, not object
-            $this->log("Start " . $this->status . ": " . $this->curl_result);
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
@@ -70,7 +64,7 @@ class Client
         if ($order['cart']['order_total_with_tax'] <= 0) {
             return false;
         }
-        if ( ! Helper::isConsistentCart($order['cart'])) {
+        if (!Helper::isConsistentCart($order['cart'])) {
             return false;
         }
 
@@ -98,7 +92,10 @@ class Client
         $data_string = json_encode(Helper::removeNulls($payload));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array(
+        curl_setopt(
+            $this->ch,
+            CURLOPT_HTTPHEADER,
+            array(
                 'Accept: application/json',
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen($data_string)
@@ -109,6 +106,7 @@ class Client
 
     private function sendRequest()
     {
+        $this->succeess = false;
         if ($this->_debug) {
             curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         }
@@ -116,12 +114,24 @@ class Client
         $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
     }
 
-    function log($msg)
+    private function dealWithResponse()
     {
-        if ( ! $this->_debug) {
+        if (200 <= $this->status && $this->status <= 299) {
+            $this->success = true;
+            $this->log("Start " . $this->status . ": Ok!");
+        } else {
+            $this->success = false;
+            $this->json = json_decode($this->curl_result, true);
+            $this->log("Start " . $this->status . ": " . $this->curl_result);
+        }
+    }
+
+    private function log($msg)
+    {
+        if (!$this->_debug) {
             return;
         }
-        if ( ! $this->_logfile) {
+        if (!$this->_logfile) {
             error_log($msg);
         } else {
             error_log($msg . "\n", 3, $this->_logfile);
@@ -136,15 +146,7 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
         $this->sendRequest();
-
-        if ($this->status >= 200 && $this->status <= 299) {
-            curl_close($this->ch);
-            $this->success = true;
-            return $this->curl_result;
-        } else {
-            $this->success = false;
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
@@ -155,15 +157,7 @@ class Client
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
         $this->verbThePayload('POST', $options);
-
-        if ($this->status >= 200 && $this->status <= 299) {
-            curl_close($this->ch);
-            $this->success = true;
-            return $this->curl_result;
-        } else {
-            $this->success = false;
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
@@ -175,14 +169,7 @@ class Client
 
         $this->initCurl($this->_endpoint . '/cards');
         $this->verbThePayload('POST', array('order' => $order));
-        if ($this->status == 204) {
-            $this->success = true;
-            $this->log("Start " . $this->status . ": Ok!");
-        } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
-            $this->success = false;
-            $this->json = json_decode($this->curl_result, true); // return array, not object
-            $this->log("Start " . $this->status . ": " . $this->curl_result);
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
@@ -192,26 +179,18 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
         $this->sendRequest();
-        $this->success = false;
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-            $this->json = json_decode($this->curl_result, true); // return array, not object
-        } elseif ($this->status >= 400 && $this->status <= 499) {
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        } else {
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
     public function qualifyForstartCards($order)
     {
         return
-            isset($order['customer']['ref']) && $order['customer']['ref']!='' &&
-            isset($order['customer']['email']) && $order['customer']['email']!='' &&
+            isset($order['customer']['ref']) && $order['customer']['ref'] != '' &&
+            isset($order['customer']['email']) && $order['customer']['email'] != '' &&
             (
-                (isset($order['delivery_address']['mobile_phone']) && $order['delivery_address']['mobile_phone']!='') ||
-                (isset($order['delivery_address']['phone']) && $order['delivery_address']['phone']!='')
+                (isset($order['delivery_address']['mobile_phone']) && $order['delivery_address']['mobile_phone'] != '') ||
+                (isset($order['delivery_address']['phone']) && $order['delivery_address']['phone'] != '')
             );
     }
 
@@ -222,19 +201,11 @@ class Client
 
     public function getPaymentMethods($uri, $options = array())
     {
-        $this->initCurl($uri . '/payment_methods' . (count($options)>0? '?' . http_build_query($options):''));
+        $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
         $this->sendRequest();
-        $this->success = false;
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-            $this->json = json_decode($this->curl_result, true); // return array, not object
-        } elseif ($this->status >= 400 && $this->status <= 499) {
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        } else {
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
@@ -244,31 +215,20 @@ class Client
         $this->initCurl($uri);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-            curl_close($this->ch);
-            return json_decode($this->curl_result, true);
-        } else {
-            $this->success = false;
-            $this->log("Error " . $this->status . ": " . print_r($this->curl_result, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
     public function updateOrder($uri, $order, $verb = 'PUT')
     {
-        if ( ! preg_match('!^https?://!', $uri)) {
+        if (!preg_match('!^https?://!', $uri)) {
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri);
         $this->verbThePayload($verb, array('order' => $order));
-
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-        } elseif ($this->status == 409) {
-            $this->success = false;
+        $this->dealWithResponse();
+        if ($this->status == 409) {
             $this->cart_has_changed = true;
-            $this->json             = json_decode($this->curl_result, true);
         }
         curl_close($this->ch);
     }
@@ -277,33 +237,18 @@ class Client
     {
         $this->initCurl($this->_endpoint . '/delivery_reports');
         $this->verbThePayload('POST', array('delivery_report' => $delivery_report));
-
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-            $this->log("Delivery " . $this->status . ": Ok!");
-        } elseif ($this->status >= 200 && $this->status <= 299 || $this->status == 409) {
-            $this->success = false;
-            $this->json = json_decode($this->curl_result, true); // return array, not object
-            $this->log("Delivery " . $this->status . ": " . print_r($this->json, true));
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
     public function orderUpdate($order)
     {
         $uri = $this->_endpoint .
-               '/merchants/' . $order['merchant']['id'] .
-               '/orders/' . $order['merchant_reference']['order_ref_1'];
+            '/merchants/' . $order['merchant']['id'] .
+            '/orders/' . $order['merchant_reference']['order_ref_1'];
         $this->initCurl($uri);
         $this->verbThePayload('PUT', array('order' => $order));
-
-        if ($this->status >= 200 && $this->status <= 299) {
-            $this->success = true;
-        } elseif ($this->status == 409) {
-            $this->success = false;
-            $this->cart_has_changed = true;
-            $this->json             = json_decode($this->curl_result, true);
-        }
+        $this->dealWithResponse();
         curl_close($this->ch);
     }
 
