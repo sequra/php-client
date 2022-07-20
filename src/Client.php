@@ -39,12 +39,18 @@ class Client
         $this->_user_agent = Helper::notNull(self::$user_agent, 'cURL php ' . phpversion());
     }
 
-    public function isValidAuth()
+    public function isValidAuth($merchant = '')
     {
-        $this->initCurl($this->_endpoint . '/orders');
+        $this->initCurl(
+            $this->_endpoint .
+            '/merchants' .
+            $merchant?'/'.$merchant:'' .
+            '/credentials'
+        );
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
-        return $this->status != 401;
+        $this->dealWithResponse();
+        return $this->succeeded();
     }
 
     public function startSolicitation($order)
