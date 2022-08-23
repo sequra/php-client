@@ -44,7 +44,7 @@ class Client
         $this->initCurl(
             $this->_endpoint .
             '/merchants' .
-            $merchant?'/'.$merchant:'' .
+            ($merchant?'/'.$merchant:'') .
             '/credentials'
         );
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
@@ -87,6 +87,7 @@ class Client
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
+        return $this->curl_result;
     }
 
     public function sendIdentificationForm($uri, $options = array())
@@ -98,6 +99,7 @@ class Client
         $this->verbThePayload('POST', $options);
         $this->dealWithResponse();
         curl_close($this->ch);
+        return $this->curl_result;
     }
 
     public function startCards($order)
@@ -188,6 +190,9 @@ class Client
         $this->initCurl($uri);
         $this->verbThePayload('PUT', array('order' => $order));
         $this->dealWithResponse();
+        if ($this->status == 409) {
+            $this->cart_has_changed = true;
+        }
         curl_close($this->ch);
     }
 
@@ -291,12 +296,12 @@ class Client
 
     private function dealWithResponse()
     {
+        $this->json = json_decode($this->curl_result, true);
         if (200 <= $this->status && $this->status <= 299) {
             $this->success = true;
             $this->log("Start " . $this->status . ": Ok!");
         } else {
             $this->success = false;
-            $this->json = json_decode($this->curl_result, true);
             $this->log("Start " . $this->status . ": " . $this->curl_result);
         }
     }
