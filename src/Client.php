@@ -142,6 +142,9 @@ class Client
 
     public function getPaymentMethods($uri, $options = array())
     {
+        if (!preg_match('!^https?://!', $uri)) {
+            $uri = $this->_endpoint . '/orders/' . $uri;
+        }
         $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
