@@ -44,7 +44,7 @@ class Client
         $this->initCurl(
             $this->_endpoint .
             '/merchants' .
-            ($merchant?'/'.$merchant:'') .
+            urlencode($merchant?'/'.$merchant:'').
             '/credentials'
         );
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
@@ -153,9 +153,14 @@ class Client
         curl_close($this->ch);
     }
 
-    public function getCreditAgreements($amount, $merchant)
+    public function getCreditAgreements($amount, $merchant, $locale = 'es-ES', $country = 'ES', $currency = 'EUR')
     {
-        $uri = $this->_endpoint . '/merchants/' . $merchant . '/credit_agreements?total_with_tax=' . $amount . '&currency=EUR&locale=es-ES&country=ES';
+        $uri = $this->_endpoint .
+            '/merchants/' . urlencode($merchant) .
+            '/credit_agreements?total_with_tax=' . urlencode($amount) .
+            '&currency=' . urlencode($currency) .
+            '&locale=' . urlencode($locale) .
+            '&country=' . urlencode($country);
         $this->initCurl($uri);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
@@ -188,8 +193,8 @@ class Client
     public function orderUpdate($order)
     {
         $uri = $this->_endpoint .
-            '/merchants/' . $order['merchant']['id'] .
-            '/orders/' . $order['merchant_reference']['order_ref_1'];
+            '/merchants/' . urlencode($order['merchant']['id']) .
+            '/orders/' . urlencode($order['merchant_reference']['order_ref_1']);
         $this->initCurl($uri);
         $this->verbThePayload('PUT', array('order' => $order));
         $this->dealWithResponse();
