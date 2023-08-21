@@ -26,6 +26,7 @@ class Client
     private $status;
     private $curl_result = null;
     private $json = null;
+    private $ch = null;
 
     public function __construct($user = null, $password = null, $endpoint = null, $debug = false, $logfile = null)
     {
@@ -44,7 +45,7 @@ class Client
         $this->initCurl(
             $this->_endpoint .
             '/merchants' .
-            urlencode($merchant?'/'.$merchant:'').
+            ($merchant?'/'.urlencode($merchant):'').
             '/credentials'
         );
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
