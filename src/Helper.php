@@ -13,22 +13,17 @@ class Helper
     public static function isConsistentCart($cart)
     {
         $totals = self::totals($cart);
-        if ( ! isset($cart['order_total_without_tax'])) {
-            $cart['order_total_without_tax'] = $totals['without_tax'];
-        }
-
-        return $cart['order_total_without_tax'] == $totals['without_tax'] && $cart['order_total_with_tax'] == $totals['with_tax'];
+        return $cart['order_total_with_tax'] == $totals['with_tax'];
     }
 
     public static function totals($cart)
     {
-        $total_without_tax = $total_with_tax = 0;
+        $total_with_tax = 0;
         foreach ($cart['items'] as $item) {
-            $total_without_tax += isset($item['total_without_tax']) ? $item['total_without_tax'] : $item['total_with_tax'];
             $total_with_tax    += $item['total_with_tax'];
         }
 
-        return array('without_tax' => $total_without_tax, 'with_tax' => $total_with_tax);
+        return array('with_tax' => $total_with_tax);
     }
 
     public static function removeNulls($data)
