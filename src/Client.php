@@ -295,7 +295,7 @@ class Client
 
     private function sendRequest()
     {
-        $this->succeess = false;
+        $this->success = false;
         if ($this->_debug) {
             curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         }
