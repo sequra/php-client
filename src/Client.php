@@ -300,6 +300,12 @@ class Client
             curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         }
         $this->curl_result = curl_exec($this->ch);
+        if ($this->curl_result === false) {
+            $this->log(
+                "cURL error: " . curl_errno($this->ch) .
+                " msg: " . curl_error($this->ch)
+            );
+        }
         $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
     }
 
