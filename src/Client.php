@@ -241,7 +241,7 @@ class Client
 
     public function getOrderUri()
     {
-        if (preg_match('/^Location:\s+([^\n\r]+)/mi', $this->headers, $m)) {
+        if ($this->headers && preg_match('/^Location:\s+([^\n\r]+)/mi', $this->headers, $m)) {
             return $m[1];
         }
     }
