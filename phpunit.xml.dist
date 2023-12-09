@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.4/phpunit.xsd" backupGlobals="false" colors="true" processIsolation="false" stopOnError="false" stopOnFailure="false" stopOnIncomplete="false" stopOnSkipped="false" cacheDirectory=".phpunit.cache" requireCoverageMetadata="false">
+    <coverage/>
+    <testsuites>
+        <testsuite name="SeQura PHP Client Test Suite">
+            <directory>./tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">src</directory>
+        </include>
+    </source>
+</phpunit>
