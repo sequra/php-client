@@ -19,7 +19,7 @@ The Sequra\PhpClient\BuilderAbstract class provides a base class to build the or
 > N/A
 
 ### 🚧 How to run the test suite 🚧
-> TBD
+> `composer install` and `vendor/bin/phpunit`
 
 ## 🚀 Install instructions 🚀
 > `composer require sequra/php-client`
