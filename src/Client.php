@@ -33,11 +33,13 @@ class Client
         $this->_debug    = $debug;
         $this->_user     = Helper::notNull($user, self::$user);
         $this->_password = Helper::notNull($password, self::$password);
+        $this->_logfile  = $logfile;
         $url_parts       = parse_url(Helper::notNull($endpoint, self::$endpoint));
         if (count($url_parts) > 1) {
             $this->_endpoint = $url_parts['scheme'] . '://' . $url_parts['host'] . (isset($url_parts['port']) ? ':' . $url_parts['port'] : '');
         }
         $this->_user_agent = Helper::notNull(self::$user_agent, 'cURL php ' . phpversion());
+        $this->log(self::class . " created!");
     }
 
     public function isValidAuth($merchant = '')
@@ -143,12 +145,27 @@ class Client
 
     public function getPaymentMethods($uri, $options = array())
     {
-        if (!preg_match('!^https?://!', $uri)) {
-            $uri = $this->_endpoint . '/orders/' . $uri;
-        }
-        $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
+        $this->initCurl($this->_endpoint . '/merchants/');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+        $this->sendRequest();
+        $this->dealWithResponse();
+        curl_close($this->ch);
+    }
+
+    public function getAvailableDisbursements ($merchant) {
+        $this->initCurl($this->_endpoint . '/merchants/' . $merchant . '/disbursements');
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+        $this->sendRequest();
+        $this->dealWithResponse();
+        curl_close($this->ch);
+    }
+
+    public function getDisbursementDetails ($path) {
+        $this->initCurl($this->_endpoint . $path);
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
