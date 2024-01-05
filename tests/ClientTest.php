@@ -67,4 +67,29 @@ final class ClientTest extends TestCase
         $disbursement = $client->getJson();
         $this->assertIsArray($disbursement['disbursement'], "getDisbursementDetails() should return a disbursement");
     }
+
+    public function testGetPaymentMethods(): void
+    {
+        $client = new Client(self::$username, self::$password, self::$endpoint);
+        $uri = $this->createOrder($client);
+        $client->getPaymentMethods($uri);
+        $paymentMethods = $client->getJson();
+        $this->assertNotEmpty(
+            $paymentMethods['payment_options'],
+            "getPaymentMethods() should return payment methods inside payment_options"
+        );
+    }
+
+    private function createOrder($client): string
+    {
+        $order = json_decode(
+            file_get_contents(__DIR__ . '/_files/order.json'),
+            true
+        );
+        $order_data = $order['order'];
+        $order_data['merchant']['id'] = self::$merchant;
+        $order_data['cart']['cart_ref'] = "" . time();
+        $client->startSolicitation($order_data);
+        return $client->getOrderUri();
+    }
 }
