@@ -230,6 +230,7 @@ class Client
         $this->_user_agent = 'sequra-cron';
         $this->initCurl($cron_url);
         curl_setopt($this->ch, CURLOPT_HTTPGET, 1);
+        curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         $this->sendRequest();
         curl_close($this->ch);
     }
