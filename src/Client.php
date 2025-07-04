@@ -8,6 +8,12 @@ namespace Sequra\PhpClient;
 
 class Client
 {
+    const HEADER_SEQURA_MERCHANT_ID = 'Sequra-Merchant-Id';
+    const HEADER_ACCEPT = 'Accept';
+    const HEADER_CONTENT_TYPE = 'Content-Type';
+    const HEADER_CONTENT_LENGTH = 'Content-Length';
+    const TYPE_JSON = 'application/json';
+    const TYPE_HTML = 'text/html';
 
     public static $endpoint = '';
     public static $user = '';
@@ -99,7 +105,7 @@ class Client
                 ($merchant ? '/' . urlencode($merchant) : '') .
                 '/credentials'
         );
-        $this->setRequestHeader('Sequra-Merchant-Id', $merchant);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -137,9 +143,9 @@ class Client
         $this->initCurl($uri . '/form_v2' . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-        $this->setRequestHeader('Accept', 'text/html');
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -176,9 +182,9 @@ class Client
         $this->initCurl($uri . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-        $this->setRequestHeader('Accept', 'text/html');
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -209,9 +215,9 @@ class Client
         $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-        $this->setRequestHeader('Accept', 'application/json');
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -223,9 +229,9 @@ class Client
         $this->initCurl($this->_endpoint . '/merchants/' . $merchant . '/disbursements');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-        $this->setRequestHeader('Accept', 'application/json');
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -237,9 +243,9 @@ class Client
         $this->initCurl($this->_endpoint . $path);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
-        $this->setRequestHeader('Accept', 'application/json');
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -256,7 +262,7 @@ class Client
             '&country=' . urlencode($country);
         $this->initCurl($uri);
 
-        $this->setRequestHeader('Sequra-Merchant-Id', $merchant);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
 
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
@@ -383,11 +389,11 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
 
-        $this->setRequestHeader('Accept', 'application/json');
-        $this->setRequestHeader('Content-Type', 'application/json');
-        $this->setRequestHeader('Content-Length', (string) strlen($data_string));
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_CONTENT_TYPE, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_CONTENT_LENGTH, (string) strlen($data_string));
         // TODO: Set merchant ID
-        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
     }
