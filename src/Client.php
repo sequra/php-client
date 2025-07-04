@@ -22,11 +22,60 @@ class Client
 
     private $success = false;
     private $cart_has_changed;
-    private $headers;
+    private $response_headers;
     private $status;
     private $curl_result = null;
     private $json = null;
     private $ch = null;
+    /**
+     * An array to store request headers.
+     * @var array<string, string>
+     */
+    private $request_headers;
+
+    /**
+     * Sets a request header for the cURL request.
+     * 
+     * @param string $name The name of the header. Must not be empty.
+     * @param string $value The value of the header. Must not be empty.
+     */
+    private function setRequestHeader($name, $value)
+    {
+        if (!is_array($this->request_headers)) {
+            $this->resetRequestHeaders();
+        }
+        $name  = trim($name);
+        $value = trim($value);
+        if ($value === '' || $name === '') {
+            return;
+        }
+        $this->request_headers[$name] = $value;
+    }
+
+    /**
+     * Returns the request headers as an array of strings formatted as "Name: Value".
+     * 
+     * @return array<string> An array of request headers formatted as "Name: Value".
+     */
+    private function getRequestHeaders()
+    {
+        if (!is_array($this->request_headers)) {
+            return array();
+        }
+        $headers = array();
+        foreach ($this->request_headers as $name => $value) {
+            $headers[] = $name . ': ' . $value;
+        }
+        return $headers;
+    }
+
+    /**
+     * Reset the request headers to an empty array.
+     */
+    private function resetRequestHeaders()
+    {
+        $this->request_headers = array();
+    }
 
     public function __construct($user = null, $password = null, $endpoint = null, $debug = false, $logfile = null)
     {
@@ -46,10 +95,11 @@ class Client
     {
         $this->initCurl(
             $this->_endpoint .
-            '/merchants' .
-            ($merchant?'/'.urlencode($merchant):'').
-            '/credentials'
+                '/merchants' .
+                ($merchant ? '/' . urlencode($merchant) : '') .
+                '/credentials'
         );
+        $this->setRequestHeader('Sequra-Merchant-Id', $merchant);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -86,7 +136,11 @@ class Client
         $options["ajax"]    = (isset($options["ajax"]) && $options["ajax"]) ? "true" : "false";
         $this->initCurl($uri . '/form_v2' . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+
+        $this->setRequestHeader('Accept', 'text/html');
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -121,7 +175,11 @@ class Client
     {
         $this->initCurl($uri . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+
+        $this->setRequestHeader('Accept', 'text/html');
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -150,25 +208,39 @@ class Client
         }
         $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+
+        $this->setRequestHeader('Accept', 'application/json');
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getAvailableDisbursements ($merchant) {
+    public function getAvailableDisbursements($merchant)
+    {
         $this->initCurl($this->_endpoint . '/merchants/' . $merchant . '/disbursements');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+
+        $this->setRequestHeader('Accept', 'application/json');
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getDisbursementDetails ($path) {
+    public function getDisbursementDetails($path)
+    {
         $this->initCurl($this->_endpoint . $path);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+
+        $this->setRequestHeader('Accept', 'application/json');
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -183,6 +255,9 @@ class Client
             '&locale=' . urlencode($locale) .
             '&country=' . urlencode($country);
         $this->initCurl($uri);
+
+        $this->setRequestHeader('Sequra-Merchant-Id', $merchant);
+
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -262,7 +337,7 @@ class Client
 
     public function getOrderUri()
     {
-        if ($this->headers && preg_match('/^Location:\s+([^\n\r]+)/mi', $this->headers, $m)) {
+        if ($this->response_headers && preg_match('/^Location:\s+([^\n\r]+)/mi', $this->response_headers, $m)) {
             return $m[1];
         }
     }
@@ -281,6 +356,11 @@ class Client
 
     // Private methods below
 
+    /**
+     * Initializes the cURL session with the given URL and sets the necessary options.
+     * 
+     * @param string $url The URL to initialize the cURL session with.
+     */
     private function initCurl($url)
     {
         $this->success = $this->json = null;
@@ -293,8 +373,8 @@ class Client
         // http://www.supermind.org/blog/763/solved-curl-56-received-problem-2-in-the-chunky-parser
         curl_setopt($this->ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
         // From http://it.toolbox.com/wiki/index.php/Use_curl_from_PHP_-_processing_response_headers
-        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeHeaders'));
-        $this->headers = '';
+        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeResponseHeaders'));
+        $this->response_headers = '';
     }
 
     private function verbThePayload($verb, $payload)
@@ -302,15 +382,13 @@ class Client
         $data_string = json_encode(Helper::removeNulls($payload));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt(
-            $this->ch,
-            CURLOPT_HTTPHEADER,
-            array(
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($data_string)
-            )
-        );
+
+        $this->setRequestHeader('Accept', 'application/json');
+        $this->setRequestHeader('Content-Type', 'application/json');
+        $this->setRequestHeader('Content-Length', (string) strlen($data_string));
+        // TODO: Set merchant ID
+        // $this->setRequestHeader('Sequra-Merchant-Id', '');
+
         $this->sendRequest();
     }
 
@@ -320,11 +398,19 @@ class Client
         if ($this->_debug) {
             curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         }
+
+        $headers = $this->getRequestHeaders();
+        if (!empty($headers)) {
+            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $headers);
+        }
+        $this->resetRequestHeaders();
+
         $this->curl_result = curl_exec($this->ch);
+
         if ($this->curl_result === false) {
             $this->log(
                 "cURL error: " . curl_errno($this->ch) .
-                " msg: " . curl_error($this->ch)
+                    " msg: " . curl_error($this->ch)
             );
         }
         $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
@@ -354,9 +440,9 @@ class Client
         }
     }
 
-    private function storeHeaders($ch, $header)
+    private function storeResponseHeaders($ch, $header)
     {
-        $this->headers .= $header;
+        $this->response_headers .= $header;
 
         return strlen($header);
     }
