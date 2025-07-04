@@ -50,8 +50,8 @@ class Client
         if (!is_array($this->request_headers)) {
             $this->resetRequestHeaders();
         }
-        $name  = trim($name);
-        $value = trim($value);
+        $name  = trim((string) $name);
+        $value = trim((string) $value);
         if ($value === '' || $name === '') {
             return;
         }
@@ -119,6 +119,7 @@ class Client
         }
 
         $this->initCurl($this->_endpoint . '/orders');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('order' => $order));
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -136,7 +137,16 @@ class Client
         return true;
     }
 
-    public function getIdentificationForm($uri, $options = array())
+    /**
+     * Retrieves the identification form for a given URI and options.
+     * 
+     * @param string $uri The URI to retrieve the identification form from.
+     * @param array $options An associative array of options for the form.
+     * @param string $merchant_id The merchant ID to be used in the request.
+     * 
+     * @return string The HTML content of the identification form.
+     */
+    public function getIdentificationForm($uri, $options = array(), $merchant_id = '')
     {
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
         $options["ajax"]    = (isset($options["ajax"]) && $options["ajax"]) ? "true" : "false";
@@ -144,8 +154,7 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
-        // TODO: Set merchant ID
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -159,6 +168,8 @@ class Client
         $options["product_code"] = $options["product"];
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
+        // TODO: Set merchant ID?
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
         $this->verbThePayload('POST', $options);
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -172,6 +183,8 @@ class Client
         }
 
         $this->initCurl($this->_endpoint . '/cards');
+        // TODO: Set merchant ID?
+        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
         $this->verbThePayload('POST', array('order' => $order));
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -183,7 +196,7 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
-        // TODO: Set merchant ID
+        // TODO: Set merchant ID?
         // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
@@ -204,21 +217,20 @@ class Client
 
     public function getMerchantPaymentMethods($merchant)
     {
-        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant);
+        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant, array(), $merchant);
     }
 
-    public function getPaymentMethods($uri, $options = array())
+    public function getPaymentMethods($uri, $options = array(), $merchant_id = '')
     {
         if (!preg_match('!^https?://!', $uri)) {
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
-        // TODO: Set merchant ID
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
 
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -230,8 +242,7 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
-        // TODO: Set merchant ID
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -244,8 +255,10 @@ class Client
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
-        // TODO: Set merchant ID
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+
+        if (preg_match('~merchants/([^/]+)/disbursements~', $path, $matches)) {
+            $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $matches[1]);
+        }
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -276,6 +289,7 @@ class Client
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload($verb, array('order' => $order));
         $this->dealWithResponse();
         if ($this->status == 409) {
@@ -287,6 +301,7 @@ class Client
     public function sendDeliveryReport($delivery_report)
     {
         $this->initCurl($this->_endpoint . '/delivery_reports');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $delivery_report['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('delivery_report' => $delivery_report));
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -298,6 +313,7 @@ class Client
             '/merchants/' . urlencode($order['merchant']['id']) .
             '/orders/' . urlencode($order['merchant_reference']['order_ref_1']);
         $this->initCurl($uri);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('PUT', array('order' => $order));
         $this->dealWithResponse();
         if ($this->status == 409) {
@@ -392,8 +408,6 @@ class Client
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
         $this->setRequestHeader(self::HEADER_CONTENT_TYPE, self::TYPE_JSON);
         $this->setRequestHeader(self::HEADER_CONTENT_LENGTH, (string) strlen($data_string));
-        // TODO: Set merchant ID
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
 
         $this->sendRequest();
     }
