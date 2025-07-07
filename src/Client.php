@@ -97,15 +97,15 @@ class Client
         $this->log(self::class . " created!");
     }
 
-    public function isValidAuth($merchant = '')
+    public function isValidAuth($merchant_id = '')
     {
         $this->initCurl(
             $this->_endpoint .
                 '/merchants' .
-                ($merchant ? '/' . urlencode($merchant) : '') .
+                ($merchant_id ? '/' . urlencode($merchant_id) : '') .
                 '/credentials'
         );
-        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -162,14 +162,13 @@ class Client
         return $this->curl_result;
     }
 
-    public function sendIdentificationForm($uri, $options = array())
+    public function sendIdentificationForm($uri, $options = array(), $merchant_id = '')
     {
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
         $options["product_code"] = $options["product"];
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
-        // TODO: Set merchant ID?
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
         $this->verbThePayload('POST', $options);
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -189,14 +188,13 @@ class Client
         curl_close($this->ch);
     }
 
-    public function getCardsForm($uri, $options = array())
+    public function getCardsForm($uri, $options = array(), $merchant_id = '')
     {
         $this->initCurl($uri . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
-        // TODO: Set merchant ID?
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -214,9 +212,9 @@ class Client
             );
     }
 
-    public function getMerchantPaymentMethods($merchant)
+    public function getMerchantPaymentMethods($merchant_id)
     {
-        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant, array(), $merchant);
+        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant_id, array(), $merchant_id);
     }
 
     public function getPaymentMethods($uri, $options = array(), $merchant_id = '')
@@ -235,13 +233,13 @@ class Client
         curl_close($this->ch);
     }
 
-    public function getAvailableDisbursements($merchant)
+    public function getAvailableDisbursements($merchant_id)
     {
-        $this->initCurl($this->_endpoint . '/merchants/' . $merchant . '/disbursements');
+        $this->initCurl($this->_endpoint . '/merchants/' . $merchant_id . '/disbursements');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
 
         $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
-        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
 
         $this->sendRequest();
         $this->dealWithResponse();
@@ -264,17 +262,17 @@ class Client
         curl_close($this->ch);
     }
 
-    public function getCreditAgreements($amount, $merchant, $locale = 'es-ES', $country = 'ES', $currency = 'EUR')
+    public function getCreditAgreements($amount, $merchant_id, $locale = 'es-ES', $country = 'ES', $currency = 'EUR')
     {
         $uri = $this->_endpoint .
-            '/merchants/' . urlencode($merchant) .
+            '/merchants/' . urlencode($merchant_id) .
             '/credit_agreements?total_with_tax=' . urlencode($amount) .
             '&currency=' . urlencode($currency) .
             '&locale=' . urlencode($locale) .
             '&country=' . urlencode($country);
         $this->initCurl($uri);
 
-        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
 
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
