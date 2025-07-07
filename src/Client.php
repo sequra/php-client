@@ -183,8 +183,7 @@ class Client
         }
 
         $this->initCurl($this->_endpoint . '/cards');
-        // TODO: Set merchant ID?
-        // $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, '');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('order' => $order));
         $this->dealWithResponse();
         curl_close($this->ch);
