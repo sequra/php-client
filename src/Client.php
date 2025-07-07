@@ -8,6 +8,12 @@ namespace Sequra\PhpClient;
 
 class Client
 {
+    const HEADER_SEQURA_MERCHANT_ID = 'Sequra-Merchant-Id';
+    const HEADER_ACCEPT = 'Accept';
+    const HEADER_CONTENT_TYPE = 'Content-Type';
+    const HEADER_CONTENT_LENGTH = 'Content-Length';
+    const TYPE_JSON = 'application/json';
+    const TYPE_HTML = 'text/html';
 
     public static $endpoint = '';
     public static $user = '';
@@ -22,11 +28,60 @@ class Client
 
     private $success = false;
     private $cart_has_changed;
-    private $headers;
+    private $response_headers;
     private $status;
     private $curl_result = null;
     private $json = null;
     private $ch = null;
+    /**
+     * An array to store request headers.
+     * @var array<string, string>
+     */
+    private $request_headers;
+
+    /**
+     * Sets a request header for the cURL request.
+     * 
+     * @param string $name The name of the header. Must not be empty.
+     * @param string $value The value of the header. Must not be empty.
+     */
+    private function setRequestHeader($name, $value)
+    {
+        if (!is_array($this->request_headers)) {
+            $this->resetRequestHeaders();
+        }
+        $name  = trim((string) $name);
+        $value = trim((string) $value);
+        if ($value === '' || $name === '') {
+            return;
+        }
+        $this->request_headers[$name] = $value;
+    }
+
+    /**
+     * Returns the request headers as an array of strings formatted as "Name: Value".
+     * 
+     * @return array<string> An array of request headers formatted as "Name: Value".
+     */
+    private function getRequestHeaders()
+    {
+        if (!is_array($this->request_headers)) {
+            return array();
+        }
+        $headers = array();
+        foreach ($this->request_headers as $name => $value) {
+            $headers[] = $name . ': ' . $value;
+        }
+        return $headers;
+    }
+
+    /**
+     * Reset the request headers to an empty array.
+     */
+    private function resetRequestHeaders()
+    {
+        $this->request_headers = array();
+    }
 
     public function __construct($user = null, $password = null, $endpoint = null, $debug = false, $logfile = null)
     {
@@ -42,14 +97,15 @@ class Client
         $this->log(self::class . " created!");
     }
 
-    public function isValidAuth($merchant = '')
+    public function isValidAuth($merchant_id = '')
     {
         $this->initCurl(
             $this->_endpoint .
-            '/merchants' .
-            ($merchant?'/'.urlencode($merchant):'').
-            '/credentials'
+                '/merchants' .
+                ($merchant_id ? '/' . urlencode($merchant_id) : '') .
+                '/credentials'
         );
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -63,6 +119,7 @@ class Client
         }
 
         $this->initCurl($this->_endpoint . '/orders');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('order' => $order));
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -80,25 +137,38 @@ class Client
         return true;
     }
 
-    public function getIdentificationForm($uri, $options = array())
+    /**
+     * Retrieves the identification form for a given URI and options.
+     * 
+     * @param string $uri The URI to retrieve the identification form from.
+     * @param array $options An associative array of options for the form.
+     * @param string $merchant_id The merchant ID to be used in the request.
+     * 
+     * @return string The HTML content of the identification form.
+     */
+    public function getIdentificationForm($uri, $options = array(), $merchant_id = '')
     {
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
         $options["ajax"]    = (isset($options["ajax"]) && $options["ajax"]) ? "true" : "false";
         $this->initCurl($uri . '/form_v2' . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
         return $this->curl_result;
     }
 
-    public function sendIdentificationForm($uri, $options = array())
+    public function sendIdentificationForm($uri, $options = array(), $merchant_id = '')
     {
         $options["product"] = array_key_exists('product', $options) ? $options["product"] : "i1";
         $options["product_code"] = $options["product"];
         $options["channel"] = array_key_exists('channel', $options) ? $options["channel"] : "sms";
         $this->initCurl($uri . '/form_deliveries');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
         $this->verbThePayload('POST', $options);
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -112,16 +182,20 @@ class Client
         }
 
         $this->initCurl($this->_endpoint . '/cards');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('order' => $order));
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getCardsForm($uri, $options = array())
+    public function getCardsForm($uri, $options = array(), $merchant_id = '')
     {
         $this->initCurl($uri . '?' . http_build_query($options));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: text/html'));
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_HTML);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -138,51 +212,68 @@ class Client
             );
     }
 
-    public function getMerchantPaymentMethods($merchant)
+    public function getMerchantPaymentMethods($merchant_id)
     {
-        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant);
+        $this->getPaymentMethods($this->_endpoint . '/merchants/' . $merchant_id, array(), $merchant_id);
     }
 
-    public function getPaymentMethods($uri, $options = array())
+    public function getPaymentMethods($uri, $options = array(), $merchant_id = '')
     {
         if (!preg_match('!^https?://!', $uri)) {
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri . '/payment_methods' . (count($options) > 0 ? '?' . http_build_query($options) : ''));
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
+
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getAvailableDisbursements ($merchant) {
-        $this->initCurl($this->_endpoint . '/merchants/' . $merchant . '/disbursements');
+    public function getAvailableDisbursements($merchant_id)
+    {
+        $this->initCurl($this->_endpoint . '/merchants/' . $merchant_id . '/disbursements');
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getDisbursementDetails ($path) {
+    public function getDisbursementDetails($path)
+    {
         $this->initCurl($this->_endpoint . $path);
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
+
+        if (preg_match('~merchants/([^/]+)/disbursements~', $path, $matches)) {
+            $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $matches[1]);
+        }
+
         $this->sendRequest();
         $this->dealWithResponse();
         curl_close($this->ch);
     }
 
-    public function getCreditAgreements($amount, $merchant, $locale = 'es-ES', $country = 'ES', $currency = 'EUR')
+    public function getCreditAgreements($amount, $merchant_id, $locale = 'es-ES', $country = 'ES', $currency = 'EUR')
     {
         $uri = $this->_endpoint .
-            '/merchants/' . urlencode($merchant) .
+            '/merchants/' . urlencode($merchant_id) .
             '/credit_agreements?total_with_tax=' . urlencode($amount) .
             '&currency=' . urlencode($currency) .
             '&locale=' . urlencode($locale) .
             '&country=' . urlencode($country);
         $this->initCurl($uri);
+
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $merchant_id);
+
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
         $this->sendRequest();
         $this->dealWithResponse();
@@ -195,6 +286,7 @@ class Client
             $uri = $this->_endpoint . '/orders/' . $uri;
         }
         $this->initCurl($uri);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload($verb, array('order' => $order));
         $this->dealWithResponse();
         if ($this->status == 409) {
@@ -206,6 +298,7 @@ class Client
     public function sendDeliveryReport($delivery_report)
     {
         $this->initCurl($this->_endpoint . '/delivery_reports');
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $delivery_report['merchant']['id'] ?? '');
         $this->verbThePayload('POST', array('delivery_report' => $delivery_report));
         $this->dealWithResponse();
         curl_close($this->ch);
@@ -217,6 +310,7 @@ class Client
             '/merchants/' . urlencode($order['merchant']['id']) .
             '/orders/' . urlencode($order['merchant_reference']['order_ref_1']);
         $this->initCurl($uri);
+        $this->setRequestHeader(self::HEADER_SEQURA_MERCHANT_ID, $order['merchant']['id'] ?? '');
         $this->verbThePayload('PUT', array('order' => $order));
         $this->dealWithResponse();
         if ($this->status == 409) {
@@ -262,7 +356,7 @@ class Client
 
     public function getOrderUri()
     {
-        if ($this->headers && preg_match('/^Location:\s+([^\n\r]+)/mi', $this->headers, $m)) {
+        if ($this->response_headers && preg_match('/^Location:\s+([^\n\r]+)/mi', $this->response_headers, $m)) {
             return $m[1];
         }
     }
@@ -281,6 +375,11 @@ class Client
 
     // Private methods below
 
+    /**
+     * Initializes the cURL session with the given URL and sets the necessary options.
+     * 
+     * @param string $url The URL to initialize the cURL session with.
+     */
     private function initCurl($url)
     {
         $this->success = $this->json = null;
@@ -293,8 +392,8 @@ class Client
         // http://www.supermind.org/blog/763/solved-curl-56-received-problem-2-in-the-chunky-parser
         curl_setopt($this->ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
         // From http://it.toolbox.com/wiki/index.php/Use_curl_from_PHP_-_processing_response_headers
-        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeHeaders'));
-        $this->headers = '';
+        curl_setopt($this->ch, CURLOPT_HEADERFUNCTION, array(&$this, 'storeResponseHeaders'));
+        $this->response_headers = '';
     }
 
     private function verbThePayload($verb, $payload)
@@ -302,15 +401,11 @@ class Client
         $data_string = json_encode(Helper::removeNulls($payload));
         curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $verb);
         curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt(
-            $this->ch,
-            CURLOPT_HTTPHEADER,
-            array(
-                'Accept: application/json',
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($data_string)
-            )
-        );
+
+        $this->setRequestHeader(self::HEADER_ACCEPT, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_CONTENT_TYPE, self::TYPE_JSON);
+        $this->setRequestHeader(self::HEADER_CONTENT_LENGTH, (string) strlen($data_string));
+
         $this->sendRequest();
     }
 
@@ -320,11 +415,19 @@ class Client
         if ($this->_debug) {
             curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false);
         }
+
+        $headers = $this->getRequestHeaders();
+        if (!empty($headers)) {
+            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $headers);
+        }
+        $this->resetRequestHeaders();
+
         $this->curl_result = curl_exec($this->ch);
+
         if ($this->curl_result === false) {
             $this->log(
                 "cURL error: " . curl_errno($this->ch) .
-                " msg: " . curl_error($this->ch)
+                    " msg: " . curl_error($this->ch)
             );
         }
         $this->status      = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
@@ -354,9 +457,9 @@ class Client
         }
     }
 
-    private function storeHeaders($ch, $header)
+    private function storeResponseHeaders($ch, $header)
     {
-        $this->headers .= $header;
+        $this->response_headers .= $header;
 
         return strlen($header);
     }
